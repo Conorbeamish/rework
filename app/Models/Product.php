@@ -33,4 +33,26 @@ class Product extends Model
     {
         return $this->hasMany(OrderItem::class, 'product_uuid', 'uuid');
     }
+
+    public function allocatedToOrders(): int
+    {
+        return (int) $this->orderItems()
+            ->whereHas('order', fn($query) => $query->where('order_status', 'placed'))
+            ->sum('quantity');
+    }
+
+    public function physicalQuantity(): int
+    {
+        return $this->warehouseStocks()->sum('quantity') + $this->allocatedToOrders();
+    }
+
+    public function totalThreshold(): int
+    {
+        return (int) $this->warehouseStocks()->sum('threshold');
+    }
+
+    public function immediateDespatch(): int
+    {
+        return $this->warehouseStocks()->sum('quantity') - $this->totalThreshold();
+    }
 }
